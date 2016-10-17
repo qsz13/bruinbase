@@ -34,3 +34,4 @@ SqlParser.tab.*
 lex.sql.c
 bruinbase
 
+.idea/
