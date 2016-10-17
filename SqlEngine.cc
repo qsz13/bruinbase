@@ -133,7 +133,34 @@ RC SqlEngine::select(int attr, const string& table, const vector<SelCond>& cond)
 RC SqlEngine::load(const string& table, const string& loadfile, bool index)
 {
   /* your code here */
+    string line;
+    RC rc;
+    RecordFile rf;
 
+    if ((rc = rf.open(table + ".tbl", 'w')) < 0) {
+        fprintf(stderr, "Error: open table %s failed\n", table.c_str());
+        rf.close();
+        return rc;
+    }
+
+    ifstream lfstream(loadfile);
+    if(lfstream.is_open()) {
+        while(getline(lfstream, line)) {
+            int key;
+            string value;
+            if((rc = parseLoadLine(line, key, value)) < 0) {
+                fprintf(stderr, "Error: while parsing a line from file %s\n", loadfile.c_str());
+                lfstream.close();
+                rf.close();
+                return rc;
+            }
+            RecordId rid;
+            rf.append(key, value, rid);
+        }
+    }
+
+    rf.close();
+    lfstream.close();
   return 0;
 }
 
