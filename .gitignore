@@ -8,6 +8,8 @@
 *.gch
 *.pch
 
+*.dSYM
+
 # Compiled Dynamic libraries
 *.so
 *.dylib
@@ -27,3 +29,8 @@
 *.exe
 *.out
 *.app
+
+SqlParser.tab.*
+lex.sql.c
+bruinbase
+
