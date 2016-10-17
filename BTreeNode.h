@@ -13,10 +13,46 @@
 #include "RecordFile.h"
 #include "PageFile.h"
 
+class BTreeNode {
+  public:
+
+    /**
+     * Return the number of keys stored in the node.
+     * @return the number of keys in the node
+     */
+    int getKeyCount();
+
+    /**
+     * Read the content of the node from the page pid in the PageFile pf.
+     * @param pid[IN] the PageId to read
+     * @param pf[IN] PageFile to read from
+     * @return 0 if successful. Return an error code if there is an error.
+     */
+    RC read(PageId pid, const PageFile& pf);
+
+    /**
+     * Write the content of the node to the page pid in the PageFile pf.
+     * @param pid[IN] the PageId to write to
+     * @param pf[IN] PageFile to write to
+     * @return 0 if successful. Return an error code if there is an error.
+     */
+    RC write(PageId pid, PageFile& pf);
+
+  protected:
+    /**
+     * The main memory buffer for loading the content of the disk page
+     * that contains the node.
+     */
+    char buffer[PageFile::PAGE_SIZE];
+
+};
+
+
+
 /**
  * BTLeafNode: The class representing a B+tree leaf node.
  */
-class BTLeafNode {
+class BTLeafNode : public BTreeNode {
   public:
    /**
     * Insert the (key, rid) pair to the node.
@@ -76,41 +112,14 @@ class BTLeafNode {
     */
     RC setNextNodePtr(PageId pid);
 
-   /**
-    * Return the number of keys stored in the node.
-    * @return the number of keys in the node
-    */
-    int getKeyCount();
- 
-   /**
-    * Read the content of the node from the page pid in the PageFile pf.
-    * @param pid[IN] the PageId to read
-    * @param pf[IN] PageFile to read from
-    * @return 0 if successful. Return an error code if there is an error.
-    */
-    RC read(PageId pid, const PageFile& pf);
-    
-   /**
-    * Write the content of the node to the page pid in the PageFile pf.
-    * @param pid[IN] the PageId to write to
-    * @param pf[IN] PageFile to write to
-    * @return 0 if successful. Return an error code if there is an error.
-    */
-    RC write(PageId pid, PageFile& pf);
 
-  private:
-   /**
-    * The main memory buffer for loading the content of the disk page 
-    * that contains the node.
-    */
-    char buffer[PageFile::PAGE_SIZE];
 }; 
 
 
 /**
  * BTNonLeafNode: The class representing a B+tree nonleaf node.
  */
-class BTNonLeafNode {
+class BTNonLeafNode : public BTreeNode {
   public:
    /**
     * Insert a (key, pid) pair to the node.
@@ -154,34 +163,9 @@ class BTNonLeafNode {
     */
     RC initializeRoot(PageId pid1, int key, PageId pid2);
 
-   /**
-    * Return the number of keys stored in the node.
-    * @return the number of keys in the node
-    */
-    int getKeyCount();
 
-   /**
-    * Read the content of the node from the page pid in the PageFile pf.
-    * @param pid[IN] the PageId to read
-    * @param pf[IN] PageFile to read from
-    * @return 0 if successful. Return an error code if there is an error.
-    */
-    RC read(PageId pid, const PageFile& pf);
-    
-   /**
-    * Write the content of the node to the page pid in the PageFile pf.
-    * @param pid[IN] the PageId to write to
-    * @param pf[IN] PageFile to write to
-    * @return 0 if successful. Return an error code if there is an error.
-    */
-    RC write(PageId pid, PageFile& pf);
 
-  private:
-   /**
-    * The main memory buffer for loading the content of the disk page 
-    * that contains the node.
-    */
-    char buffer[PageFile::PAGE_SIZE];
+
 }; 
 
 #endif /* BTREENODE_H */
