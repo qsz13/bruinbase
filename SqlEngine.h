@@ -67,6 +67,8 @@ class SqlEngine {
    * @return error code. 0 if no error
    */
   static RC parseLoadLine(const std::string& line, int& key, std::string& value);
+
+  static RC test();
 };
 
 #endif /* SQLENGINE_H */

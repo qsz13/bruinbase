@@ -10,10 +10,12 @@
 #ifndef BTREEINDEX_H
 #define BTREEINDEX_H
 
+#include <vector>
 #include "Bruinbase.h"
 #include "PageFile.h"
 #include "RecordFile.h"
-             
+#include "BTreeNode.h"
+
 /**
  * The data structure to point to a particular entry at a b+tree leaf node.
  * An IndexCursor consists of pid (PageId of the leaf node) and 
@@ -97,6 +99,12 @@ class BTreeIndex {
   /// this class is destructed. Make sure to store the values of the two 
   /// variables in disk, so that they can be reconstructed when the index
   /// is opened again later.
+
+  RC writeBTreeMeta();
+  RC readBTreeMeta();
+  RC writeBTreeMeta(PageId rootPid, int treeHeight);
+  RC getLeafNodeToInsert(int key, PageId& pid, std::vector<PageId> &path);
+  RC createNonLeafRoot(BTNonLeafNode& root, PageId pid1, int key, PageId pid2);
 };
 
 #endif /* BTREEINDEX_H */

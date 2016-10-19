@@ -13,6 +13,7 @@
 
 int main()
 {
+  SqlEngine::test();
   // run the SQL engine taking user commands from standard input (console).
   SqlEngine::run(stdin);
 

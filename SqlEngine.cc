@@ -14,6 +14,7 @@
 #include <fstream>
 #include "Bruinbase.h"
 #include "SqlEngine.h"
+#include "BTreeIndex.h"
 
 using namespace std;
 
@@ -136,11 +137,20 @@ RC SqlEngine::load(const string& table, const string& loadfile, bool index)
     string line;
     RC rc;
     RecordFile rf;
+    BTreeIndex bi;
 
     if ((rc = rf.open(table + ".tbl", 'w')) < 0) {
         fprintf(stderr, "Error: open table %s failed\n", table.c_str());
-        rf.close();
         return rc;
+    }
+
+    if(index) {
+        if((rc = bi.open("test.idx", 'w')) < 0) {
+            fprintf(stderr, "Error: open index %s failed\n", table.c_str());
+            rf.close();
+            return rc;
+        }
+
     }
 
     ifstream lfstream(loadfile);
@@ -156,9 +166,13 @@ RC SqlEngine::load(const string& table, const string& loadfile, bool index)
             }
             RecordId rid;
             rf.append(key, value, rid);
+            if(index) {
+                bi.insert(key, rid);
+            }
         }
     }
 
+    if(index) bi.close();
     rf.close();
     lfstream.close();
   return 0;
@@ -202,5 +216,11 @@ RC SqlEngine::parseLoadLine(const string& line, int& key, string& value)
     loc = value.find(c, 0);
     if (loc != string::npos) { value.erase(loc); }
 
+    return 0;
+}
+
+
+RC SqlEngine::test() {
+    load("test", "test.del", true);
     return 0;
 }

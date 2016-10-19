@@ -6,21 +6,24 @@
  * @author Junghoo "John" Cho <cho AT cs.ucla.edu>
  * @date 3/24/2008
  */
- 
+
+#include <iostream>
+#include <vector>
 #include "BTreeIndex.h"
 #include "BTreeNode.h"
 
 using namespace std;
 
-/*
+/**
  * BTreeIndex constructor
  */
 BTreeIndex::BTreeIndex()
 {
     rootPid = -1;
+    treeHeight = 0;
 }
 
-/*
+/**
  * Open the index file in read or write mode.
  * Under 'w' mode, the index file should be created if it does not exist.
  * @param indexname[IN] the name of the index file
@@ -29,19 +32,84 @@ BTreeIndex::BTreeIndex()
  */
 RC BTreeIndex::open(const string& indexname, char mode)
 {
-    return 0;
+    int rc =0;
+    if((rc = pf.open(indexname, mode)) < 0) {
+        return rc;
+    }
+    if(pf.endPid() == 0){
+        // new index file
+        writeBTreeMeta();
+    } else {
+        // not new index file
+        readBTreeMeta();
+
+    }
+    return rc;
 }
 
-/*
+RC BTreeIndex::readBTreeMeta() {
+
+
+    char metaPage[PageFile::PAGE_SIZE];
+    int rc = pf.read(0, metaPage);
+    rootPid = ((int*)metaPage)[0];
+    treeHeight = ((int*)metaPage)[1];
+    if(INFO) {
+        cout << "loading: rootPid " << rootPid << endl;
+        cout << "loading: read treeHeight " << treeHeight << endl;
+    }
+    return rc;
+}
+
+/**
  * Close the index file.
  * @return error code. 0 if no error
  */
 RC BTreeIndex::close()
 {
+    return pf.close();
+}
+
+RC BTreeIndex::createNonLeafRoot(BTNonLeafNode& root, PageId pid1, int key, PageId pid2)
+{
+    root.initializeRoot(pid1, key, pid2);
+    writeBTreeMeta(root.getPageId(), treeHeight+1);
     return 0;
 }
 
-/*
+
+RC BTreeIndex::writeBTreeMeta()
+{
+    if(INFO) {
+        cout << "writing: rootPid " << rootPid << endl;
+        cout << "writing: treeHeight " << treeHeight << endl;
+    }
+    char metaPage[PageFile::PAGE_SIZE];
+    ((int*)metaPage)[0] = rootPid;
+    ((int*)metaPage)[1] = treeHeight;
+    return pf.write(0, metaPage);
+}
+
+RC BTreeIndex::writeBTreeMeta(PageId rootPid, int treeHeight)
+{
+    this->rootPid = rootPid;
+    this->treeHeight = treeHeight;
+    return writeBTreeMeta();
+}
+
+RC BTreeIndex::getLeafNodeToInsert(int key, PageId& pid, vector<PageId> &path)
+{
+    pid = rootPid;
+    int level = 1;
+    while(level++ < treeHeight) {
+        BTNonLeafNode nonLeafNode(pid, pf);
+        path.push_back(pid);
+        nonLeafNode.locateChildPtr(key, pid);
+    }
+    return 0;
+}
+
+/**
  * Insert (key, RecordId) pair to the index.
  * @param key[IN] the key for the value inserted into the index
  * @param rid[IN] the RecordId for the record being inserted into the index
@@ -49,7 +117,65 @@ RC BTreeIndex::close()
  */
 RC BTreeIndex::insert(int key, const RecordId& rid)
 {
-    return 0;
+    int rc = 0;
+    vector<PageId> path;
+    if(rootPid == -1) {             // Tree is empty
+        BTLeafNode root(pf);
+        root.insert(key, rid);
+        writeBTreeMeta(root.getPageId(), 1);
+    } else {
+        PageId pid;
+        getLeafNodeToInsert(key, pid, path);
+
+        BTLeafNode leafToInsert(pid, pf);
+        if((rc = leafToInsert.insert(key, rid)) == RC_NODE_FULL) {
+
+            if(DEBUG) cout << "Leaf node "<< leafToInsert.getPageId() << " is full!" << endl;
+
+            BTLeafNode leafSib(pf);
+            int leafSibKey;
+            leafToInsert.insertAndSplit(key, rid, leafSib, leafSibKey);
+
+            if(DEBUG) {
+                cout <<endl<< "After split: " << endl;
+                leafToInsert.printNode();
+                cout << "-------------" << endl;
+                leafSib.printNode();
+            }
+
+            PageId childPid = leafSib.getPageId();
+            int childKey = leafSibKey;
+            PageId parentID = leafToInsert.getPageId();
+            while(!path.empty()) {
+                parentID = path.back();
+                path.pop_back();
+                BTNonLeafNode parent(parentID, pf);
+                if((rc = parent.insert(childKey, childPid))==0) {
+                    parent.printNode();
+                    return rc;
+                }
+                BTNonLeafNode nonLeafSib(pf);
+                int nonLeafSibKey;
+                parent.insertAndSplit(childKey, childPid, nonLeafSib, nonLeafSibKey);
+
+                if(DEBUG) {
+                    cout << endl << "After split of " << parentID <<": " << endl;
+                    parent.printNode();
+                    cout << "------ Left -------" << endl;
+                    nonLeafSib.printNode();
+                    cout << "------ Right -------" << endl;
+                }
+
+                childKey = nonLeafSibKey;
+                childPid = nonLeafSib.getPageId();
+            }
+            BTNonLeafNode newRoot(pf);
+            createNonLeafRoot(newRoot, parentID, childKey, childPid);
+            newRoot.printNode();
+
+        }
+    }
+    return rc;
 }
 
 /**
@@ -75,7 +201,7 @@ RC BTreeIndex::locate(int searchKey, IndexCursor& cursor)
     return 0;
 }
 
-/*
+/**
  * Read the (key, rid) pair at the location specified by the index cursor,
  * and move foward the cursor to the next entry.
  * @param cursor[IN/OUT] the cursor pointing to an leaf-node index entry in the b+tree

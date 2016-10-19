@@ -13,14 +13,40 @@
 #include "RecordFile.h"
 #include "PageFile.h"
 
+#define BT_MAX_KEY 3
+
+typedef struct {
+    int keyCount;
+    int keys[BT_MAX_KEY];
+    RecordId rids[BT_MAX_KEY];
+    PageId nextPid;
+} LeafNode;
+
+typedef struct {
+    int keyCount;
+    int keys[BT_MAX_KEY];
+    PageId pids[BT_MAX_KEY+1];
+} NonLeafNode;
+
 class BTreeNode {
   public:
+
+    // for creating
+    BTreeNode(PageFile &pf);
+
+    //for loading
+    BTreeNode(PageId pid, PageFile &pf);
+
 
     /**
      * Return the number of keys stored in the node.
      * @return the number of keys in the node
      */
-    int getKeyCount();
+    virtual int getKeyCount() const = 0;
+
+    virtual bool isFull() const = 0;
+
+    virtual void printNode() const = 0;
 
     /**
      * Read the content of the node from the page pid in the PageFile pf.
@@ -38,6 +64,10 @@ class BTreeNode {
      */
     RC write(PageId pid, PageFile& pf);
 
+    RC write();
+
+    int getPageId() const;
+
   protected:
     /**
      * The main memory buffer for loading the content of the disk page
@@ -45,6 +75,11 @@ class BTreeNode {
      */
     char buffer[PageFile::PAGE_SIZE];
 
+    virtual int* getKeys() const = 0;
+
+    PageFile& pageFile;
+    PageId pageId;
+    RC binarySearch(int keys[], int low, int high, int target, int &idx) const;
 };
 
 
@@ -54,7 +89,15 @@ class BTreeNode {
  */
 class BTLeafNode : public BTreeNode {
   public:
-   /**
+
+    // For Page creating
+    BTLeafNode(PageFile &pf);
+
+    // For Page loading
+    BTLeafNode(PageId pid, PageFile &pf);
+
+
+    /**
     * Insert the (key, rid) pair to the node.
     * Remember that all keys inside a B+tree node should be kept sorted.
     * @param key[IN] the key to insert
@@ -102,7 +145,7 @@ class BTLeafNode : public BTreeNode {
     * Return the pid of the next slibling node.
     * @return the PageId of the next sibling node 
     */
-    PageId getNextNodePtr();
+    PageId getNextNodePtr() const;
 
 
    /**
@@ -113,7 +156,26 @@ class BTLeafNode : public BTreeNode {
     RC setNextNodePtr(PageId pid);
 
 
-}; 
+    /**
+     * Return the number of keys stored in the node.
+     * @return the number of keys in the node
+     */
+    int getKeyCount() const;
+
+    bool isFull() const;
+
+    void printNode() const;
+
+
+
+
+
+private:
+    void setKeyCount(int keyCount);
+    RecordId* getRecords() const;
+    int* getKeys() const;
+
+};
 
 
 /**
@@ -121,7 +183,12 @@ class BTLeafNode : public BTreeNode {
  */
 class BTNonLeafNode : public BTreeNode {
   public:
-   /**
+    BTNonLeafNode(PageFile &pf);
+
+    BTNonLeafNode(PageId pid, PageFile &pf);
+
+
+    /**
     * Insert a (key, pid) pair to the node.
     * Remember that all keys inside a B+tree node should be kept sorted.
     * @param key[IN] the key to insert
@@ -163,8 +230,26 @@ class BTNonLeafNode : public BTreeNode {
     */
     RC initializeRoot(PageId pid1, int key, PageId pid2);
 
+   /**
+    * Return the number of keys stored in the node.
+    * @return the number of keys in the node
+    */
+    int getKeyCount() const;
+
+    bool isFull() const;
+
+    void printNode() const;
 
 
+
+
+
+
+private:
+    void setKeyCount(int keyCount);
+    PageId* getPages() const;
+    int* getKeys() const;
+    int getPidCount() const;
 
 }; 
 
