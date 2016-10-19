@@ -167,25 +167,20 @@ RC BTLeafNode::insertAndSplit(int key, const RecordId& rid,
     memcpy( siblingRids, rids + start, (BT_MAX_KEY-start) * sizeof(RecordId));
     setKeyCount(start);
     sibling.setKeyCount(BT_MAX_KEY-start);
-    int i;
-    if(key > keys[start-1]) {
-        for(i = sibling.getKeyCount(); siblingKeys[i-1]> key && i > 0; i--) {
-            siblingKeys[i] = siblingKeys[i-1];
-            siblingRids[i] = siblingRids[i-1];
-        }
-        siblingKeys[i] = key;
-        siblingRids[i] = rid;
-        sibling.setKeyCount(sibling.getKeyCount()+1);
-    } else {
-        for(i = getKeyCount();keys[i-1]> key && i > 0; i--) {
-            keys[i] = keys[i-1];
-            rids[i] = rids[i-1];
-        }
-        keys[i] = key;
-        rids[i] = rid;
-        setKeyCount(getKeyCount()+1);
 
+    int *insertKeys = key > keys[start-1]? siblingKeys:keys;
+    RecordId* insertRids = key > keys[start-1]? siblingRids:rids;
+    int i = getKeyCount();
+    for(;insertKeys[i-1]> key && i > 0; i--) {
+        insertKeys[i] = insertKeys[i-1];
+        insertRids[i] = insertRids[i-1];
     }
+    insertKeys[i] = key;
+    insertRids[i] = rid;
+
+    if(key > keys[start-1]) sibling.setKeyCount(sibling.getKeyCount()+1);
+    else setKeyCount(getKeyCount()+1);
+
     PageId temp = getNextNodePtr();
     setNextNodePtr(sibling.getPageId());
     sibling.setNextNodePtr(temp);
