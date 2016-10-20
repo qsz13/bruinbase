@@ -168,9 +168,9 @@ RC BTLeafNode::insertAndSplit(int key, const RecordId& rid,
     setKeyCount(start);
     sibling.setKeyCount(BT_MAX_KEY-start);
 
-    int *insertKeys = key > keys[start-1]? siblingKeys:keys;
-    RecordId* insertRids = key > keys[start-1]? siblingRids:rids;
-    int i = getKeyCount();
+    int *insertKeys = key > keys[start-1]? siblingKeys : keys;
+    RecordId* insertRids = key > keys[start-1]? siblingRids : rids;
+    int i = getKeyCount()-1;
     for(;insertKeys[i-1]> key && i > 0; i--) {
         insertKeys[i] = insertKeys[i-1];
         insertRids[i] = insertRids[i-1];
@@ -259,7 +259,7 @@ void BTLeafNode::printNode() const
     int* keys = getKeys();
     RecordId* rids = getRecords();
     PageId next = getNextNodePtr();
-    cout <<endl<< "#####################  Leaf Node  ########################" << endl;
+    cout <<endl<< "#####################  Leaf Node "<< getPageId()<<" ########################" << endl;
     cout << "keyCount: " << keyCount<< endl << "keys: ";
     for(int i = 0; i < keyCount; i++) {
         cout << keys[i] << " ";
@@ -305,23 +305,29 @@ BTNonLeafNode::BTNonLeafNode(PageId pid, PageFile &pf) :BTreeNode(pid, pf)
  */
 RC BTNonLeafNode::insert(int key, PageId pid)
 {
-    int keyCount = getKeyCount();
     if(isFull()) {
         return RC_NODE_FULL;
     }
+
+    return forceInsert(key, pid);
+}
+
+
+RC BTNonLeafNode::forceInsert(int key, PageId pid) {
+    int keyCount = getKeyCount();
     int* keys = getKeys();
     PageId* pids = getPages();
     int i = keyCount;
     for(;keys[i-1] > key && i >0;i--) {
-            keys[i] = keys[i-1];
-            pids[i+1] = pids[i];
+        keys[i] = keys[i-1];
+        pids[i+1] = pids[i];
     }
     keys[i] = key;
     pids[i+1] = pid;
     setKeyCount(keyCount+1);
-    write();
-    return 0;
+    return write();
 }
+
 
 /**
  * Insert the (key, pid) pair to the node
@@ -338,30 +344,42 @@ RC BTNonLeafNode::insertAndSplit(int key, PageId pid, BTNonLeafNode& sibling, in
     // TODO different from leaf node
     int *keys = getKeys(), *siblingKeys = sibling.getKeys();
     PageId *pids = getPages(), *siblingPids = sibling.getPages();
-    int start = key < keys[BT_MAX_KEY/2]? BT_MAX_KEY/2 : (BT_MAX_KEY+1)/2;
-    memcpy( siblingKeys, keys + start, (BT_MAX_KEY-start) * sizeof(int) );
-    memcpy( siblingPids, pids + start, (BT_MAX_KEY+1-start) * sizeof(PageId));
-    setKeyCount(start);
-    sibling.setKeyCount(BT_MAX_KEY-start);
-    int i;
-    if(key > keys[start-1]) {
-        for(i = sibling.getKeyCount(); siblingKeys[i-1]> key && i > 0; i--) {
-            siblingKeys[i] = siblingKeys[i-1];
-            siblingPids[i+1] = siblingPids[i];
-        }
-        siblingKeys[i] = key;
-        siblingPids[i+1] = pid;
-        sibling.setKeyCount(sibling.getKeyCount()+1);
-    } else {
-        for(i = getKeyCount();keys[i-1]> key && i > 0; i--) {
-            keys[i] = keys[i-1];
-            pids[i+1] = pids[i];
-        }
-        keys[i] = key;
-        pids[i+1] = pid;
-        setKeyCount(getKeyCount()+1);
 
+//    int start;
+//    if(keys[(BT_MAX_KEY-1)/2]<key && key < keys[(BT_MAX_KEY+1)/2] ) {
+//        //key is mid
+//        start = (BT_MAX_KEY+1)/2;
+//        midKey = key;
+//
+//
+//    } else if(key < keys[(BT_MAX_KEY-1)/2]) {
+//        start = (BT_MAX_KEY+1)/2;
+//        mid = (BT_MAX_KEY+1)/2;
+//
+//    } else if(key > keys[(BT_MAX_KEY+1)/2]){
+//        start = (BT_MAX_KEY+1)/2+1;
+//        mid = (BT_MAX_KEY+1)/2+1;
+//    } else {
+//        //duplicate
+//        return 0;
+//    }
+//
+//    memcpy( siblingKeys, keys + start, (BT_MAX_KEY-start) * sizeof(int));
+//    memcpy( siblingPids, pids + start, (BT_MAX_KEY+1-start) * sizeof(PageId));
+
+
+    forceInsert(key, pid);
+    int size = BT_MAX_KEY+1;
+    midKey = keys[size/2];
+    int i = size/2+1,j=0;
+    for(; i <size; i++,j++) {
+        siblingKeys[j] = keys[i];
+        siblingPids[j] = pids[i-1];
     }
+    siblingPids[j] = pids[i];
+
+    setKeyCount((BT_MAX_KEY+1)/2);
+    sibling.setKeyCount(BT_MAX_KEY/2);
     sibling.write();
     write();
     return 0;
@@ -446,7 +464,7 @@ void BTNonLeafNode::printNode() const
     int keyCount = getKeyCount();
     int* keys = getKeys();
     PageId * pids = getPages();
-    cout <<endl<< "####################  Non Leaf Node  #########################" << endl;
+    cout <<endl<< "####################  Non Leaf Node "<< getPageId()<<" #########################" << endl;
     cout << "keyCount: " << keyCount<< endl << "keys: ";
     for(int i = 0; i < keyCount; i++) {
         cout << keys[i] << " ";

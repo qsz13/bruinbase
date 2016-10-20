@@ -24,8 +24,8 @@ typedef struct {
 
 typedef struct {
     int keyCount;
-    int keys[BT_MAX_KEY];
-    PageId pids[BT_MAX_KEY+1];
+    int keys[BT_MAX_KEY+1];
+    PageId pids[BT_MAX_KEY+2];
 } NonLeafNode;
 
 class BTreeNode {
@@ -250,6 +250,7 @@ private:
     PageId* getPages() const;
     int* getKeys() const;
     int getPidCount() const;
+    RC forceInsert(int key, PageId pid);
 
 }; 
 

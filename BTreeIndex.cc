@@ -160,10 +160,12 @@ RC BTreeIndex::insert(int key, const RecordId& rid)
 
                 if(DEBUG) {
                     cout << endl << "After split of " << parentID <<": " << endl;
-                    parent.printNode();
                     cout << "------ Left -------" << endl;
-                    nonLeafSib.printNode();
+                    parent.printNode();
                     cout << "------ Right -------" << endl;
+                    nonLeafSib.printNode();
+                    cout << "-------------------" << endl;
+
                 }
 
                 childKey = nonLeafSibKey;
