@@ -13,7 +13,7 @@
 #include "RecordFile.h"
 #include "PageFile.h"
 
-#define BT_MAX_KEY 3
+#define BT_MAX_KEY 4
 
 typedef struct {
     int keyCount;

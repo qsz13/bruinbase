@@ -170,7 +170,7 @@ RC BTLeafNode::insertAndSplit(int key, const RecordId& rid,
 
     int *insertKeys = key > keys[start-1]? siblingKeys : keys;
     RecordId* insertRids = key > keys[start-1]? siblingRids : rids;
-    int i = getKeyCount()-1;
+    int i = key > keys[start-1]?sibling.getKeyCount():getKeyCount();
     for(;insertKeys[i-1]> key && i > 0; i--) {
         insertKeys[i] = insertKeys[i-1];
         insertRids[i] = insertRids[i-1];
@@ -344,29 +344,6 @@ RC BTNonLeafNode::insertAndSplit(int key, PageId pid, BTNonLeafNode& sibling, in
     // TODO different from leaf node
     int *keys = getKeys(), *siblingKeys = sibling.getKeys();
     PageId *pids = getPages(), *siblingPids = sibling.getPages();
-
-//    int start;
-//    if(keys[(BT_MAX_KEY-1)/2]<key && key < keys[(BT_MAX_KEY+1)/2] ) {
-//        //key is mid
-//        start = (BT_MAX_KEY+1)/2;
-//        midKey = key;
-//
-//
-//    } else if(key < keys[(BT_MAX_KEY-1)/2]) {
-//        start = (BT_MAX_KEY+1)/2;
-//        mid = (BT_MAX_KEY+1)/2;
-//
-//    } else if(key > keys[(BT_MAX_KEY+1)/2]){
-//        start = (BT_MAX_KEY+1)/2+1;
-//        mid = (BT_MAX_KEY+1)/2+1;
-//    } else {
-//        //duplicate
-//        return 0;
-//    }
-//
-//    memcpy( siblingKeys, keys + start, (BT_MAX_KEY-start) * sizeof(int));
-//    memcpy( siblingPids, pids + start, (BT_MAX_KEY+1-start) * sizeof(PageId));
-
 
     forceInsert(key, pid);
     int size = BT_MAX_KEY+1;

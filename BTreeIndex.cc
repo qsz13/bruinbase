@@ -151,7 +151,7 @@ RC BTreeIndex::insert(int key, const RecordId& rid)
                 path.pop_back();
                 BTNonLeafNode parent(parentID, pf);
                 if((rc = parent.insert(childKey, childPid))==0) {
-                    parent.printNode();
+                    if(DEBUG) parent.printNode();
                     return rc;
                 }
                 BTNonLeafNode nonLeafSib(pf);
@@ -173,7 +173,7 @@ RC BTreeIndex::insert(int key, const RecordId& rid)
             }
             BTNonLeafNode newRoot(pf);
             createNonLeafRoot(newRoot, parentID, childKey, childPid);
-            newRoot.printNode();
+            if(DEBUG) newRoot.printNode();
 
         }
     }
@@ -200,7 +200,20 @@ RC BTreeIndex::insert(int key, const RecordId& rid)
  */
 RC BTreeIndex::locate(int searchKey, IndexCursor& cursor)
 {
-    return 0;
+    int rc = 0;
+    int pid = rootPid;
+    if(rootPid<=0)
+        return RC_NO_SUCH_RECORD;
+    for(int level = 1; level < treeHeight;level++) {
+        BTNonLeafNode current(pid, pf);
+        current.locateChildPtr(searchKey, pid);
+    }
+    BTLeafNode leaf(pid, pf);
+    int eid;
+    if((rc = leaf.locate(searchKey,eid))<0) return RC_NO_SUCH_RECORD;
+    cursor.eid = eid;
+    cursor.pid = pid;
+    return rc;
 }
 
 /**
