@@ -1,4 +1,5 @@
 #include "BTreeNode.h"
+#include "RecordFile.h"
 #include <iostream>
 
 using namespace std;
@@ -235,6 +236,23 @@ RecordId *BTLeafNode::getRecords() const {
     return ((LeafNode *) buffer)->rids;
 }
 
+int BTLeafNode::getKeyByEid(int eid) const {
+    return getKeys()[eid];
+}
+RecordId BTLeafNode::getRidByEid(int eid) const {
+    return getRecords()[eid];
+}
+
+RC BTLeafNode::forward(PageId &pid, int& eid) {
+    if(pid < 0) return RC_END_OF_TREE;
+    if(++eid >=getKeyCount()) {
+        pid = getNextNodePtr();
+        eid = 0;
+    }
+    return 0;
+}
+
+
 void BTLeafNode::printNode() const {
     int keyCount = getKeyCount();
     int *keys = getKeys();
@@ -348,7 +366,7 @@ RC BTNonLeafNode::insertAndSplit(int key, PageId pid, BTNonLeafNode &sibling, in
  */
 RC BTNonLeafNode::locateChildPtr(int searchKey, PageId &pid) {
     int index = -1;
-    binarySearch(getKeys(), 0, getKeyCount() - 1, searchKey, index);
+    if(binarySearch(getKeys(), 0, getKeyCount() - 1, searchKey, index)==0) index++;
     pid = getPages()[index];
     return 0;
 }

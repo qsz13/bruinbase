@@ -13,7 +13,7 @@
 #include "RecordFile.h"
 #include "PageFile.h"
 
-#define BT_MAX_KEY 4
+#define BT_MAX_KEY 84
 
 typedef struct {
     int keyCount;
@@ -162,9 +162,15 @@ public:
      */
     int getKeyCount() const;
 
+    int getKeyByEid(int eid) const;
+
+    RecordId getRidByEid(int eid) const;
+
     bool isFull() const;
 
     void printNode() const;
+
+    RC forward(PageId &pid, int& eid);
 
 
 private:
@@ -234,6 +240,7 @@ public:
      * @return the number of keys in the node
      */
     int getKeyCount() const;
+
 
     bool isFull() const;
 

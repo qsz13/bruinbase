@@ -13,6 +13,7 @@
 #include <vector>
 #include "Bruinbase.h"
 #include "RecordFile.h"
+#include "BTreeIndex.h"
 
 /**
  * data structure to represent a condition in the WHERE clause
@@ -24,6 +25,21 @@ struct SelCond {
     } comp;
     char *value;  // the value to compare
 };
+
+struct CombinedCond{
+
+    bool hasKey, hasValue, hasEqual, hasNEqual, hasRange;
+    int rangeMin, rangeMax,  exactValue;
+    CombinedCond():
+            hasKey(false),
+            hasValue(false),
+            hasEqual(false),
+            hasNEqual(false),
+            hasRange(false),
+            rangeMin(INT_MIN),
+            rangeMax(INT_MAX),
+            exactValue(0) { }
+} ;
 
 /**
  * the class that takes, parses, and executes the user commands.
@@ -71,6 +87,15 @@ public:
     static RC parseLoadLine(const std::string &line, int &key, std::string &value);
 
     static RC test();
+
+private:
+
+    static RC selectWithIndex(int attr, const std::string &table, const CombinedCond& cCond, BTreeIndex &bi);
+
+    static RC selectWithoutIndex(int attr, const std::string &table, const std::vector<SelCond> &conds);
+
+    static RC printResult(int attr, int key, RecordId& rid, RecordFile& rf);
+
 };
 
 #endif /* SQLENGINE_H */

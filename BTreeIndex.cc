@@ -167,6 +167,7 @@ RC BTreeIndex::insert(int key, const RecordId &rid) {
             if (DEBUG) newRoot.printNode();
 
         }
+        if (DEBUG) leafToInsert.printNode();
     }
     return rc;
 }
@@ -199,8 +200,8 @@ RC BTreeIndex::locate(int searchKey, IndexCursor &cursor) {
         current.locateChildPtr(searchKey, pid);
     }
     BTLeafNode leaf(pid, pf);
-    int eid;
-    if ((rc = leaf.locate(searchKey, eid)) < 0) return RC_NO_SUCH_RECORD;
+    int eid = 0;
+    rc = leaf.locate(searchKey, eid);
     cursor.eid = eid;
     cursor.pid = pid;
     return rc;
@@ -215,5 +216,11 @@ RC BTreeIndex::locate(int searchKey, IndexCursor &cursor) {
  * @return error code. 0 if no error
  */
 RC BTreeIndex::readForward(IndexCursor &cursor, int &key, RecordId &rid) {
-    return 0;
+    if(cursor.pid < 0) return RC_END_OF_TREE;
+    BTLeafNode leaf(cursor.pid, pf);
+    key = leaf.getKeyByEid(cursor.eid);
+    rid = leaf.getRidByEid(cursor.eid);
+    return leaf.forward(cursor.pid, cursor.eid);
 }
+
+

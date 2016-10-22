@@ -27,7 +27,7 @@ const int RC_NO_SUCH_RECORD = -1012;
 const int RC_END_OF_TREE = -1013;
 const int RC_INVALID_ATTRIBUTE = -1014;
 
-#define DEBUG 1
-#define INFO 1
+#define DEBUG 0
+#define INFO 0
 
 #endif // BRUINBASE_H

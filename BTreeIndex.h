@@ -89,7 +89,7 @@ public:
      * @return error code. 0 if no error
      */
     RC readForward(IndexCursor &cursor, int &key, RecordId &rid);
-
+    
 private:
     PageFile pf;         /// the PageFile used to store the actual b+tree in disk
 
@@ -99,6 +99,7 @@ private:
     /// this class is destructed. Make sure to store the values of the two
     /// variables in disk, so that they can be reconstructed when the index
     /// is opened again later.
+
 
     RC writeBTreeMeta();
 

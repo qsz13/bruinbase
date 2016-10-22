@@ -24,6 +24,7 @@ extern FILE *sqlin;
 int sqlparse(void);
 
 
+
 RC SqlEngine::run(FILE *commandline) {
     fprintf(stdout, "Bruinbase> ");
 
@@ -35,7 +36,150 @@ RC SqlEngine::run(FILE *commandline) {
     return 0;
 }
 
-RC SqlEngine::select(int attr, const string &table, const vector<SelCond> &cond) {
+//RC SqlEngine::select(int attr, const string &table, const vector<SelCond> &cond) {
+
+//}
+
+
+RC SqlEngine::select(int attr, const string &table, const vector<SelCond> &conds) {
+
+    BTreeIndex bi;
+
+    if(bi.open(table+".idx",'r')<0) return selectWithoutIndex(attr, table, conds);
+
+
+    int tempMin, tempMax;
+    CombinedCond cCond;
+    if(conds.size()<1){
+        if(attr == 2 || attr == 3) return selectWithoutIndex(attr, table, conds);
+        else return selectWithIndex(attr, table, cCond, bi);
+
+    }
+
+
+    for(int i = 0; i < conds.size(); i++) {
+        if(conds[i].attr == 1) { //key
+            cCond.hasKey = true;
+        }
+        else {
+            cCond.hasValue = true;
+        }
+        int condValue = atoi(conds[i].value);
+        switch(conds[i].comp) {
+            case SelCond::EQ:
+                if(cCond.hasEqual && condValue != cCond.exactValue) return 0;
+                cCond.hasEqual = true;
+                if(cCond.hasNEqual && condValue == cCond.exactValue) return 0;
+                if(cCond.hasRange && (condValue>cCond.rangeMax||condValue<cCond.rangeMin)) return 0;
+                cCond.exactValue = condValue;
+
+                break;
+
+            case SelCond::NE:
+                cCond.hasNEqual = true;
+                if(cCond.hasEqual && condValue == cCond.exactValue) return 0;
+                cCond.exactValue = condValue;
+
+                break;
+
+            case SelCond::GT:
+                condValue+=1;
+            case SelCond::GE:
+                cCond.hasRange = true;
+                tempMin = condValue;
+                if(tempMin > cCond.rangeMax) return 0;
+                cCond.rangeMin = max(cCond.rangeMin, tempMin);
+                break;
+
+            case SelCond::LT:
+                condValue--;
+            case SelCond::LE:
+                cCond.hasRange = true;
+                tempMax = condValue;
+                if(tempMax < cCond.rangeMin) return 0;
+                cCond.rangeMax = min(cCond.rangeMax, tempMax);
+                break;
+
+        }
+
+    }
+    if(cCond.hasEqual && cCond.hasNEqual) cCond.hasNEqual = false;
+
+    if((cCond.hasValue && ! cCond.hasKey)||(cCond.hasNEqual && !cCond.hasEqual && !cCond.hasRange)) {
+        return selectWithoutIndex(attr, table, conds);
+    } else {
+        return selectWithIndex(attr, table, cCond, bi);
+    }
+
+}
+
+
+RC SqlEngine::selectWithIndex(int attr, const std::string &table, const CombinedCond& cCond, BTreeIndex &bi) {
+    RecordFile rf;   // RecordFile containing the table
+    RecordId rid;  // record cursor for table scanning
+    int rc;
+    if(attr == 2 || attr == 3){
+        if ((rc = rf.open(table + ".tbl", 'r')) < 0) {
+            fprintf(stderr, "Error: table %s does not exist\n", table.c_str());
+            return rc;
+        }
+    }
+    int key;
+    IndexCursor indexCursor;
+    if(cCond.hasEqual){
+        //search with cCond.exactValue
+        key = cCond.exactValue;
+        if((rc = bi.locate(key, indexCursor)) < 0 ) {
+            return 0;
+        } else {
+            if(attr == 4){
+                fprintf(stdout, "1\n");
+            } else {
+                bi.readForward(indexCursor,key,rid);
+                printResult(attr, key, rid, rf);
+            }
+        }
+    } else {
+        //search starting from rangeMin
+        int count = 0;
+        key = cCond.rangeMin;
+        bi.locate(key, indexCursor);
+        while(bi.readForward(indexCursor, key, rid) == 0 && key <= cCond.rangeMax) {
+            if(cCond.hasNEqual && key == cCond.exactValue) {
+                continue;
+            }
+            if(attr == 4) count++;
+            else printResult(attr, key, rid, rf);
+        }
+        if(attr == 4){
+            fprintf(stdout, "%d\n", count);
+        }
+    }
+    return 0;
+}
+
+RC SqlEngine::printResult(int attr, int key, RecordId& rid, RecordFile& rf) {
+    string value;
+    switch(attr) {
+        case 1:
+            fprintf(stdout, "%d\n", key);
+            break;
+
+        case 2:
+
+            rf.read(rid,key, value);
+            fprintf(stdout, "%s\n", value.c_str());
+            break;
+        case 3:
+            rf.read(rid,key, value);
+            fprintf(stdout, "%d '%s'\n", key, value.c_str());
+            break;
+    }
+    return 0;
+}
+
+
+RC SqlEngine::selectWithoutIndex(int attr, const std::string &table, const std::vector<SelCond> &cond) {
     RecordFile rf;   // RecordFile containing the table
     RecordId rid;  // record cursor for table scanning
 
@@ -51,10 +195,8 @@ RC SqlEngine::select(int attr, const string &table, const vector<SelCond> &cond)
         return rc;
     }
 
-    if ((rc =))
-
-        // scan the table file from the beginning
-        rid.pid = rid.sid = 0;
+    // scan the table file from the beginning
+    rid.pid = rid.sid = 0;
     count = 0;
     while (rid < rf.endRid()) {
         // read the tuple
@@ -131,6 +273,9 @@ RC SqlEngine::select(int attr, const string &table, const vector<SelCond> &cond)
     rf.close();
     return rc;
 }
+
+
+
 
 RC SqlEngine::load(const string &table, const string &loadfile, bool index) {
     /* your code here */
