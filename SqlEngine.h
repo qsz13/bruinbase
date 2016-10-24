@@ -11,6 +11,7 @@
 #define SQLENGINE_H
 
 #include <vector>
+#include <climits>
 #include "Bruinbase.h"
 #include "RecordFile.h"
 #include "BTreeIndex.h"

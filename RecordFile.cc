@@ -9,6 +9,8 @@
 
 #include "Bruinbase.h"
 #include "RecordFile.h"
+#include <cstring>
+
 
 using std::string;
 

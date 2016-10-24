@@ -1,6 +1,8 @@
 #include "BTreeNode.h"
 #include "RecordFile.h"
 #include <iostream>
+#include <cstring>
+#include <cstdio>
 
 using namespace std;
 

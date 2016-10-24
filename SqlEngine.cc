@@ -298,7 +298,7 @@ RC SqlEngine::load(const string &table, const string &loadfile, bool index) {
 
     }
 
-    ifstream lfstream(loadfile);
+    ifstream lfstream(loadfile.c_str());
     if (lfstream.is_open()) {
         while (getline(lfstream, line)) {
             int key;

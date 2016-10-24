@@ -89,7 +89,7 @@ public:
      * @return error code. 0 if no error
      */
     RC readForward(IndexCursor &cursor, int &key, RecordId &rid);
-    
+
 private:
     PageFile pf;         /// the PageFile used to store the actual b+tree in disk
 
