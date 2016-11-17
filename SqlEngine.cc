@@ -290,8 +290,8 @@ RC SqlEngine::load(const string &table, const string &loadfile, bool index) {
     }
 
     if (index) {
-        if ((rc = bi.open("test.idx", 'w')) < 0) {
-            fprintf(stderr, "Error: open index %s failed\n", table.c_str());
+        if ((rc = bi.open(table+".idx", 'w')) < 0) {
+            fprintf(stderr, "Error: create index %s failed\n", table.c_str());
             rf.close();
             return rc;
         }
@@ -360,11 +360,5 @@ RC SqlEngine::parseLoadLine(const string &line, int &key, string &value) {
     loc = value.find(c, 0);
     if (loc != string::npos) { value.erase(loc); }
 
-    return 0;
-}
-
-
-RC SqlEngine::test() {
-    load("test", "test.del", true);
     return 0;
 }
