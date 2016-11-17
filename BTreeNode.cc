@@ -347,7 +347,7 @@ RC BTNonLeafNode::insertAndSplit(int key, PageId pid, BTNonLeafNode &sibling, in
     int i = size / 2 + 1, j = 0;
     for (; i < size; i++, j++) {
         siblingKeys[j] = keys[i];
-        siblingPids[j] = pids[i - 1];
+        siblingPids[j] = pids[i];
     }
     siblingPids[j] = pids[i];
 
