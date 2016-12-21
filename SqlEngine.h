@@ -30,7 +30,8 @@ struct SelCond {
 struct CombinedCond{
 
     bool hasKey, hasValue, hasEqual, hasNEqual, hasRange;
-    int rangeMin, rangeMax,  exactValue;
+    int rangeMin, rangeMax,  exactKey;
+    std::string exactValue;
     CombinedCond():
             hasKey(false),
             hasValue(false),
@@ -39,7 +40,8 @@ struct CombinedCond{
             hasRange(false),
             rangeMin(INT_MIN),
             rangeMax(INT_MAX),
-            exactValue(0) { }
+            exactKey(0),
+            exactValue("") { };
 } ;
 
 /**
@@ -87,15 +89,16 @@ public:
      */
     static RC parseLoadLine(const std::string &line, int &key, std::string &value);
 
-    static RC test();
-
 private:
 
-    static RC selectWithIndex(int attr, const std::string &table, const CombinedCond& cCond, BTreeIndex &bi);
+    static RC selectWithIndex(int attr, const std::string &table, const CombinedCond& cCond, const std::vector<SelCond> &conds);
 
     static RC selectWithoutIndex(int attr, const std::string &table, const std::vector<SelCond> &conds);
 
     static RC printResult(int attr, int key, RecordId& rid, RecordFile& rf);
+
+    static RC printResult(int attr, int key, RecordId& rid, RecordFile& rf, std::string value);
+
 
 };
 
